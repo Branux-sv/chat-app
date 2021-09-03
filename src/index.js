@@ -23,8 +23,12 @@ app.get('/', (req, resp) => {
 io.on('connection', (socket) => {
     console.log('New WebSocket Connection')
 
-    socket.emit('message', generateMessage('Welcome!'))
-    socket.broadcast.emit('message',generateMessage('A new user has joined'))
+    socket.on('join', ({ username, room }) => {
+        socket.join(room)
+
+        socket.emit('message', generateMessage('Welcome!'))
+        socket.broadcast.to(room).emit('message',generateMessage(username + ' has joined!'))
+    })
 
     socket.on('sendMessage', (msg, callback) => {
         const filter = new Filter()
@@ -33,7 +37,7 @@ io.on('connection', (socket) => {
             return callback('Profanity is not allowed!')
         }
 
-         io.emit('message', generateMessage(msg))
+         io.to('tmp..').emit('message', generateMessage(msg))
          callback()
     })
 
@@ -45,6 +49,7 @@ io.on('connection', (socket) => {
         io.emit('locationMessage', generateLocationMessage( URL_GOOGLE_MAPS + coords.latitude + ',' + coords.longitude)) 
         callback()
     })
+
 
 })
 
