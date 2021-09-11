@@ -6,6 +6,7 @@ const Filter = require('bad-words')
 const { generateMessage, generateLocationMessage } = require('./utils/messages')
 const URL_GOOGLE_MAPS = 'https://google.com/maps?q='
 const Users = require('./utils/users')
+const NAME_ADMIN = 'Admin'
 
 const app = express()
 const server = http.createServer(app)
@@ -33,35 +34,35 @@ io.on('connection', (socket) => {
 
         socket.join(user.room)
 
-        socket.emit('message', generateMessage('Welcome!'))
-        socket.broadcast.to(user.room).emit('message',generateMessage(user.username + ' has joined!'))
+        socket.emit('message', generateMessage(NAME_ADMIN, 'Welcome!'))
+        socket.broadcast.to(user.room).emit('message',generateMessage(NAME_ADMIN, user.username + ' has joined!'))
         callback()
-    })
-
+    })    
+    
     socket.on('sendMessage', (msg, callback) => {
+        const user = Users.getUser(socket.id) 
         const filter = new Filter()
 
         if (filter.isProfane(msg)){
             return callback('Profanity is not allowed!')
         }
 
-         io.to('sex').emit('message', generateMessage(msg))
+         io.to(user.room).emit('message', generateMessage(user.username, msg))
          callback()
     })
 
     socket.on('disconnect', () => {
         const user = Users.removeUser(socket.id)        
         if(user){
-            io.to(user.room).emit('message', generateMessage( user.username + " has left :("))
+            io.to(user.room).emit('message', generateMessage(NAME_ADMIN, user.username + " has left :("))
         }
     })
 
     socket.on('sendLocation', (coords, callback) => {
-        io.emit('locationMessage', generateLocationMessage( URL_GOOGLE_MAPS + coords.latitude + ',' + coords.longitude)) 
+        const user = Users.getUser(socket.id) 
+        io.to(user.room).emit('locationMessage', generateLocationMessage( user.username,URL_GOOGLE_MAPS + coords.latitude + ',' + coords.longitude)) 
         callback()
     })
-
-
 })
 
 server.listen(port, () => {
