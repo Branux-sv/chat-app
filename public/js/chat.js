@@ -10,12 +10,12 @@ const $messages = document.querySelector('#messages')
 //Templates
 const messageTemplate = document.querySelector('#message-template').innerHTML
 const locationTemplate = document.querySelector('#location-template').innerHTML
+const sidebarTemplate = document.querySelector('#sidebar-template').innerHTML
 
 //Options
 const { username, room } = Qs.parse(location.search, { ignoreQueryPrefix: true })
 
 socket.on('message', (message)  => {
-    console.log(message)
     const html = Mustache.render(messageTemplate, {
         username: message.username,
         message: message.text,
@@ -25,13 +25,20 @@ socket.on('message', (message)  => {
 })
 
 socket.on('locationMessage', (locationInfo)  => {
-    console.log(locationInfo)
     const html = Mustache.render(locationTemplate, {
         username: locationInfo.username,
         url: locationInfo.url,
         createdAt: moment(locationInfo.createdAt).format("h:mm:ss a") 
     })
     $messages.insertAdjacentHTML('beforeend', html)
+})
+
+socket.on('roomData', ({room, users})  => {
+    const html = Mustache.render(sidebarTemplate, {
+        room,
+        users
+    })
+    document.querySelector('#sidebar').innerHTML = html
 })
 
 $messageForm.addEventListener('submit', (e) => {
@@ -62,7 +69,6 @@ $buttonSendLocation.addEventListener('click', () => {
     $buttonSendLocation.setAttribute('disabled','disabled')
 
     navigator.geolocation.getCurrentPosition((position) => {
-        console.log(position)
         socket.emit('sendLocation',{
             latitude: position.coords.latitude,
             longitude: position.coords.longitude
